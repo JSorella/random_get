@@ -6,8 +6,6 @@ require 'uri'
 
 class RandomGet
 
-  VERSION=1.0
-
   def initialize(api_key, min=0, max=9999)
     @api_key = api_key
     @min = min
