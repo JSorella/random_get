@@ -1,57 +1,29 @@
 require 'webmock/rspec'
 
-
-RSpec.describe RandomGet do
-
-  let(:random) { RandomGet.new "dbb7f816-b792-496e-ad56-990fc2b2bd7b" }
-  
-  it 'Has a version number' do
-    expect(RandomGet::VERSION).not_to be nil
+describe RandomGet do
+  let(:api_key) { "dbb7f816-b792-496e-ad56-990fc2b2bd7b" }
+  let(:mocked_response) do
+    {
+      status: 200,
+      body: { result: { random: { data: [6095] } } }.to_json
+    }
   end
-  
-  context 'When component calls to API' do
-    let(:expected_response_body) do
-      {
-        jsonrpc: "2.0",
-        result: {
-          random: {
-            data: [6095],
-            completionTime: "2017-12-27 15:19:23Z"
-          },
-          bitsUsed: 13,
-          bitsLeft: 249961,
-          requestsLeft: 997,
-          advisoryDelay: 1440
-        },
-        id: 1
-      }.to_json
-    end
-    
-    before :each do
-      stub_request(
-        :post, 
-        "https://api.random.org/json-rpc/1/invoke"
-      ).with(
-        body: {
-          params: {
-            apiKey: "dbb7f816-b792-496e-ad56-990fc2b2bd7b", 
-            n: 1, 
-            min: 0, 
-            max: 9999
-          }, 
-          method: "generateIntegers",
-          jsonrpc: "2.0",
-          id: 1
-        }.to_json,
-        headers: {'Content-Type'=>'application/json-rpc'}
-      ).to_return(
-        status: 200, 
-        body: expected_response_body, headers: {}
-      )
-    end
+  let(:request_body_base) { described_class::REQUEST_BODY_BASE }
+  let(:request_headers) { described_class::REQUEST_HEADERS }
+  let(:request_uri) { described_class::REQUEST_URI }
 
-    it 'Get method returns an Integer' do
-      expect(random.get).to be_a_kind_of(Integer)
+  before(:each) do
+    stub_request(:post, request_uri).
+      with(body: hash_including(request_body_base), headers: request_headers).
+      to_return(mocked_response)
+  end
+
+  context "when initialized with the default parameters" do
+    subject { RandomGet.new api_key }
+
+    it "calls the API once on each request" do
+      2.times { subject.get }
+      expect(WebMock).to have_requested(:post, request_uri).twice
     end
   end
 end
